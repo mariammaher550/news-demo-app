@@ -124,7 +124,7 @@ def country_page():
     topics = data['Topic'].dropna().unique()
     print(len(topics))
     topics = np.append(["All"], topics, 0)
-    st.sidebar.multiselect("select", topics)
+    #st.sidebar.multiselect("select", topics)
     selected_hashtag = st.sidebar.selectbox("Choose a Topic", topics)
     #selected_hashtag = st.sidebar.radio(options=topics, label= "choose")
     #selected_hashtag = st_tags_sidebar("enter", topics)
