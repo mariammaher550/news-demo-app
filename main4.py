@@ -40,7 +40,7 @@ def empty_page():
             del st.session_state.format_view
         st.experimental_rerun()
 def main_page():
-    st.title("Country and Policy Viewer")
+    st.title("APAC ESG Policy Monitor")
     country = st.selectbox("Choose a country", ["China", "Singapore", "Australia"])
     format_view = st.radio("Choose your viewing format", ["View by Policy", "View by Date"])
 
