@@ -99,18 +99,24 @@ def show_policy_details(expand, row):
     expand.write(f"**Summary:** {row['Summary']}")
     expand.write(f"**Related News:** [{row['Title']}]({row['Link']})")
 def policy_detail_page():
-    policy = st.session_state.selected_policy
+    #col1, col2 = st.rows(2)
+        policy = st.session_state.selected_policy
    # show_policy_details(st,policy)
-    st.title(f"{policy['Policy']}")
-    st.write(f"**Title:** {policy['Policy (English)']}")
-    st.write(f"**Category:** {policy['Topic']}")
-    st.write(f"**Link to Policy:** [Link]({policy['Policy Link']})")
-    st.write(f"**Summary:** {policy['Summary']}")
-    st.write(f"**Related News:** [{policy['Title']}]({policy['Link']})")
+    #with col1:
+        st.title(f"{policy['Policy']}")
+        st.write(f"**Title:** {policy['Policy (English)']}")
+        st.write(f"**Category:** {policy['Topic']}")
+        st.write(f"**Link to Policy:** [Link]({policy['Policy Link']})")
+        st.write(f"**Summary:** {policy['Summary']}")
+        st.write(f"**Related News:** [{policy['Title']}]({policy['Link']})")
 
-    if st.button("Back to Policy List"):
-        del st.session_state.selected_policy
-        st.experimental_rerun()
+        if st.button("Back to Policy List"):
+            del st.session_state.selected_policy
+            st.experimental_rerun()
+   # with col2:
+        url = policy['Link']
+        # Embed the webpage
+        st.components.v1.iframe(url, width=700, height=600, scrolling=True)
 
 def policy_detail_page_view_by_policy():
     policy = st.session_state.policy
@@ -129,6 +135,9 @@ def policy_detail_page_view_by_policy():
         del st.session_state.policy
         del st.session_state.filtered_data
         st.experimental_rerun()
+    for link in filtered_data[filtered_data["Policy"] == policy]['Link']:
+        st.components.v1.iframe(link, width=700, height=600, scrolling=True)
+
 
 
 
