@@ -99,12 +99,27 @@ def show_policy_details(expand, row):
     expand.write(f"**Summary:** {row['Summary']}")
     expand.write(f"**Related News:** [{row['Title']}]({row['Link']})")
 def policy_detail_page():
-    #col1, col2 = st.rows(2)
-        policy = st.session_state.selected_policy
+    st.set_page_config(layout="wide")
+    policy = st.session_state.selected_policy
+    # st.title(f"{policy['Policy']}")
+    # st.write(f"**Title:** {policy['Policy (English)']}")
+    st.markdown(f"<h1 style='text-align: center;'>{policy['Policy']}</h1>", unsafe_allow_html=True)
+    st.markdown(f"<h2 style='text-align: center;'>{policy['Policy (English)']}</h2>", unsafe_allow_html=True)
+
+    col1, col2 = st.columns(2)
+
+
    # show_policy_details(st,policy)
-    #with col1:
-        st.title(f"{policy['Policy']}")
-        st.write(f"**Title:** {policy['Policy (English)']}")
+    with col1:
+        # st.title(f"{policy['Policy']}")
+        # st.write(f"**Title:** {policy['Policy (English)']}")
+        st.write("\n \n \n")
+        st.write("\n \n \n")
+        st.write("\n \n \n")
+        st.write("\n \n \n")
+        st.write("\n \n \n")
+        st.write("\n \n \n")
+
         st.write(f"**Category:** {policy['Topic']}")
         st.write(f"**Link to Policy:** [Link]({policy['Policy Link']})")
         st.write(f"**Summary:** {policy['Summary']}")
@@ -113,30 +128,42 @@ def policy_detail_page():
         if st.button("Back to Policy List"):
             del st.session_state.selected_policy
             st.experimental_rerun()
-   # with col2:
+    with col2:
         url = policy['Link']
         # Embed the webpage
         st.components.v1.iframe(url, width=700, height=600, scrolling=True)
 
 def policy_detail_page_view_by_policy():
+    st.set_page_config(layout="wide")
     policy = st.session_state.policy
     filtered_data = st.session_state.filtered_data
-    st.subheader(policy)
-    st.write(f"**Title:** {filtered_data[filtered_data['Policy'] == policy]['Policy (English)'].iloc[0]}")
-    st.write(f"**Category:** {filtered_data[filtered_data['Policy'] == policy]['Topic'].iloc[0]}")
-    st.write(f"**Link to Policy:** [Link]({filtered_data[filtered_data['Policy'] == policy]['Policy Link'].iloc[0]})")
-    st.write(filtered_data[filtered_data['Policy'] == policy]['Summary'].iloc[0])
-    expand = st.expander(f"Show sources for {policy}")
-    for title, link in zip(filtered_data[filtered_data["Policy"] == policy]['Title'],
-                           filtered_data[filtered_data["Policy"] == policy]['Link']):
-        expand.write(f"**Related News:** [{title}]({link}")
+    st.markdown(f"<h1 style='text-align: center;'>{policy}</h1>", unsafe_allow_html=True)
+    st.markdown(f"<h2 style='text-align: center;'>{filtered_data[filtered_data['Policy'] == policy]['Policy (English)'].iloc[0]}</h2>", unsafe_allow_html=True)
+    # st.subheader(policy)
+    # st.write(f"**Title:** {filtered_data[filtered_data['Policy'] == policy]['Policy (English)'].iloc[0]}")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.write("\n \n \n")
+        st.write("\n \n \n")
+        st.write("\n \n \n")
+        st.write("\n \n \n")
+        st.write("\n \n \n")
+        st.write("\n \n \n")
+        st.write(f"**Category:** {filtered_data[filtered_data['Policy'] == policy]['Topic'].iloc[0]}")
+        st.write(f"**Link to Policy:** [Link]({filtered_data[filtered_data['Policy'] == policy]['Policy Link'].iloc[0]})")
+        st.write(filtered_data[filtered_data['Policy'] == policy]['Summary'].iloc[0])
+        expand = st.expander(f"Show sources for {policy}")
+        for title, link in zip(filtered_data[filtered_data["Policy"] == policy]['Title'],
+                               filtered_data[filtered_data["Policy"] == policy]['Link']):
+            expand.write(f"**Related News:** [{title}]({link}")
 
-    if st.button("Back to Policy List"):
-        del st.session_state.policy
-        del st.session_state.filtered_data
-        st.experimental_rerun()
-    for link in filtered_data[filtered_data["Policy"] == policy]['Link']:
-        st.components.v1.iframe(link, width=700, height=600, scrolling=True)
+        if st.button("Back to Policy List"):
+            del st.session_state.policy
+            del st.session_state.filtered_data
+            st.experimental_rerun()
+    with col2:
+        for link in filtered_data[filtered_data["Policy"] == policy]['Link']:
+            st.components.v1.iframe(link, width=700, height=600, scrolling=True)
 
 
 
