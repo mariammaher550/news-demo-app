@@ -3,9 +3,7 @@ import pandas as pd
 import numpy as np
 #from streamlit_tags import  st_tags_sidebar, st_tags
 
-#TODO update viewing policies with viewing seperate page
-#TODO update drop down menue to using tags
-#TODO redirect to empty page "no data available" for singapore and austr..
+
 
 excel_file_path = 'data/Chinese Policy News_Jan 24 Sample.xlsx'
 data = pd.read_excel(excel_file_path)
@@ -20,6 +18,16 @@ print("UNIQQUEEE " + str(len(data["Policy"].unique())))
 print(data.shape)
 print(f"DATE {data['Date'].isna().sum()}")
 
+
+def filter_categories(df, chosen_categories):
+    # Join the categories into a regex pattern
+    regex_pattern = chosen_categories
+
+    # Create a boolean mask
+    mask = df['Topic'].str.contains(regex_pattern, na=False)
+
+    # Filter the DataFrame
+    return df[mask]
 def empty_page():
     st.title("No Available Data")
 
@@ -34,7 +42,7 @@ def empty_page():
 def main_page():
     st.title("Country and Policy Viewer")
     country = st.selectbox("Choose a country", ["China", "Singapore", "Australia"])
-    format_view = st.radio("Choose your viewing format", ["View by Date", "View by Policy"])
+    format_view = st.radio("Choose your viewing format", ["View by Policy", "View by Date"])
 
     if st.button("Submit"):
         st.session_state.country = country
@@ -62,22 +70,25 @@ def view_by_date(data):
         st.subheader(f"Date: {date}")
         day_data = data[data['Date'] == date]
         for _, row in day_data.iterrows():
-            expand = st.expander(f"View policy for {row['Link']}")
+            expand = st.expander(f"View policies for {row['Link']}")
             #if st.button(f"View policy for {row['Link']}", key=row['Link']):
             if expand:
-                show_policy_details(expand, row)
+                if expand.button(f"**Policy:** {row['Policy']}", key=row["Policy (English)"]):
+                    st.session_state.selected_policy = row
+                    st.experimental_rerun()
+
 
     # Handle entries with no available date
     no_date_data = data[data['Date'].isna()]
     if not no_date_data.empty:
         st.subheader("No Available Date")
         for _, row in no_date_data.iterrows():
-            # if st.button(f"View policy for {row['Link']}", key=row['Link'] + "_nodate"):
-            #     show_policy_details(row)
             expand = st.expander(f"View policy for {row['Link']}")
             # if st.button(f"View policy for {row['Link']}", key=row['Link']):
             if expand:
-                show_policy_details(expand, row)
+                if expand.button(f"**Policy:** {row['Policy']}", key=row["Policy Link"]):
+                    st.session_state.selected_policy = row
+                    st.experimental_rerun()
 
 def show_policy_details(expand, row):
     # Display policy details for the selected URL
@@ -89,60 +100,76 @@ def show_policy_details(expand, row):
     expand.write(f"**Related News:** [{row['Title']}]({row['Link']})")
 def policy_detail_page():
     policy = st.session_state.selected_policy
-    show_policy_details(policy)
-    # st.title(f"{policy['Policy']}")
-    # st.write(f"**Title:** {policy['Policy (English)']}")
-    # st.write(f"**Category:** {policy['Topic']}")
-    # st.write(f"**Link to Policy:** [Link]({policy['Policy Link']})")
-    # st.write(f"**Summary:** {policy['Summary']}")
+   # show_policy_details(st,policy)
+    st.title(f"{policy['Policy']}")
+    st.write(f"**Title:** {policy['Policy (English)']}")
+    st.write(f"**Category:** {policy['Topic']}")
+    st.write(f"**Link to Policy:** [Link]({policy['Policy Link']})")
+    st.write(f"**Summary:** {policy['Summary']}")
     st.write(f"**Related News:** [{policy['Title']}]({policy['Link']})")
 
     if st.button("Back to Policy List"):
         del st.session_state.selected_policy
         st.experimental_rerun()
 
+def policy_detail_page_view_by_policy():
+    policy = st.session_state.policy
+    filtered_data = st.session_state.filtered_data
+    st.subheader(policy)
+    st.write(f"**Title:** {filtered_data[filtered_data['Policy'] == policy]['Policy (English)'].iloc[0]}")
+    st.write(f"**Category:** {filtered_data[filtered_data['Policy'] == policy]['Topic'].iloc[0]}")
+    st.write(f"**Link to Policy:** [Link]({filtered_data[filtered_data['Policy'] == policy]['Policy Link'].iloc[0]})")
+    st.write(filtered_data[filtered_data['Policy'] == policy]['Summary'].iloc[0])
+    expand = st.expander(f"Show sources for {policy}")
+    for title, link in zip(filtered_data[filtered_data["Policy"] == policy]['Title'],
+                           filtered_data[filtered_data["Policy"] == policy]['Link']):
+        expand.write(f"**Related News:** [{title}]({link}")
+
+    if st.button("Back to Policy List"):
+        del st.session_state.policy
+        del st.session_state.filtered_data
+        st.experimental_rerun()
+
+
+
 def view_by_policy(filtered_data):
     for policy in filtered_data['Policy'].unique():
-        st.subheader(policy)
-        st.write(f"**Title:** {filtered_data[filtered_data['Policy'] == policy]['Policy (English)'].iloc[0]}")
-        st.write(f"**Category:** {filtered_data[filtered_data['Policy'] == policy]['Topic'].iloc[0]}")
-        st.write(f"**Link to Policy:** [Link]({filtered_data[filtered_data['Policy'] == policy]['Policy Link'].iloc[0]})")
-        st.write(filtered_data[filtered_data['Policy'] == policy]['Summary'].iloc[0])
-        expand = st.expander(f"Show sources for {policy}")
-        for title, link in zip(filtered_data[filtered_data["Policy"] == policy]['Title'], filtered_data[filtered_data["Policy"] == policy]['Link']):
-            expand.write(f"**Related News:** [{title}]({link}")
+        if st.button(f"View Policy for {filtered_data[filtered_data['Policy'] == policy]['Policy'].iloc[0]}"):
+            st.session_state.policy = policy
+            st.session_state.filtered_data = filtered_data
+            st.experimental_rerun()
 
 def reset_state():
     keys_to_delete = ["country", "format_view", "selected_policy"]
     for key in keys_to_delete:
         if key in st.session_state:
             del st.session_state[key]
+
 def country_page():
     st.title(f"Viewing Data for {st.session_state.country}")
     st.write(f"Format: {st.session_state.format_view}")
     st.sidebar.header("Filter by Topic")
-    topics = data['Topic'].dropna().unique()
-    print(len(topics))
-    topics = np.append(["All"], topics, 0)
+    topics = data['Topic'].unique().tolist()
+    new_topics = ["All"]
+    for x in topics:
+        for y in x.split(','):
+            new_topics.append(y)
+
     #st.sidebar.multiselect("select", topics)
-    selected_hashtag = st.sidebar.selectbox("Choose a Topic", topics)
-    #selected_hashtag = st.sidebar.radio(options=topics, label= "choose")
-    #selected_hashtag = st_tags_sidebar("enter", topics)
-    # for tag in topics:
-    #     if st.sidebar.radio(tag):
-    #         selected_tags.append(tag)
-    # keywords = st_tags(
-    #     label='# Enter Keywords:',
-    #     text='Press enter to add more',
-    #     value=['Zero', 'One', 'Two'],
-    #     suggestions=['five', 'six', 'seven', 'eight', 'nine', 'three', 'eleven', 'ten', 'four'],
-    #     maxtags=4,
-    #     key="aljnf")
+    selected_hashtag = st.sidebar.selectbox("Choose a Topic", new_topics)
+    print(type(selected_hashtag))
 
     if selected_hashtag == "All":
         filtered_data = data
     else:
-     filtered_data = data[data['Topic'] == selected_hashtag]
+        # selected hashtag in
+        filtered_data = filter_categories(data, selected_hashtag)
+        # def check_tags(topic):
+        #     if pd.isnull(topic) or not isinstance(topic, str):  # Check if the topic is a string
+        #         return False
+        #     return any(tag in topic.split(",") for tag in selected_hashtag)
+        # print(data["Topic"].apply(check_tags))
+        # filtered_data = data[data['Topic'].apply(check_tags)]
 
     csv = filtered_data.to_csv(index=False)
     st.sidebar.download_button(label="Download Filtered Data", data=csv, file_name='policy_data.csv', mime='text/csv')
@@ -166,5 +193,7 @@ elif st.session_state.country in ["Singapore", "Australia"]:
     empty_page()
 elif "selected_policy" in st.session_state:
     policy_detail_page()
+elif "filtered_data" and "policy" in st.session_state:
+    policy_detail_page_view_by_policy()
 else:
     country_page()
