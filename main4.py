@@ -134,7 +134,13 @@ def policy_detail_page_view_by_policy():
 
 def view_by_policy(filtered_data):
     for policy in filtered_data['Policy'].unique():
-        if st.button(f"View Policy for {filtered_data[filtered_data['Policy'] == policy]['Policy'].iloc[0]}"):
+        st.subheader(f"{filtered_data[filtered_data['Policy'] == policy]['Policy'].iloc[0]}")
+        st.write(f"**Title:** {filtered_data[filtered_data['Policy'] == policy]['Policy (English)'].iloc[0]}")
+        st.write(f"**Categories:** {filtered_data[filtered_data['Policy'] == policy]['Topic'].iloc[0]}")
+        expand = st.expander("View Summary")
+        if expand:
+            expand.write(f"**Summary:** \n {filtered_data[filtered_data['Policy'] == policy]['Summary'].iloc[0]}")
+        if st.button(f"View Policy Details", key=filtered_data[filtered_data['Policy'] == policy]['Policy'].iloc[0]):
             st.session_state.policy = policy
             st.session_state.filtered_data = filtered_data
             st.experimental_rerun()
