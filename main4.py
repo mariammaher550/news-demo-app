@@ -24,7 +24,7 @@ def empty_page():
     st.title("No Available Data")
 
     if st.button("Back to Homepage"):
-        if "selected_policy" in st.session_state:kin
+        if "selected_policy" in st.session_state:
             del st.session_state.selected_policy
         if "country" in st.session_state:
             del st.session_state.country
