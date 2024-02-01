@@ -5,14 +5,14 @@ import base64
 import os
 from pdf2image import convert_from_path
 from io import BytesIO
+from passlib.hash import bcrypt
 import numpy as np
 #from streamlit_tags import  st_tags_sidebar, st_tags
 
 
 #TODO authentication
-#TODO embeded page in view by policy
-#TODO pdf to images save
-#TODO display images
+#TODO add logout button in country page and in sidebar
+#TODO add title to login in page
 
 excel_file_path = 'data/Chinese Policy News_Jan 24 Sample.xlsx'
 data = pd.read_excel(excel_file_path)
@@ -94,14 +94,22 @@ def empty_page():
             del st.session_state.format_view
         st.experimental_rerun()
 def main_page():
+    #st.set_page_config(layout="centered")
     st.title("APAC ESG Policy Monitor")
     country = st.selectbox("Choose a country", ["China", "Singapore", "Australia"])
     format_view = st.radio("Choose your viewing format", ["View by Policy", "View by Date"])
-
-    if st.button("Submit"):
-        st.session_state.country = country
-        st.session_state.format_view = format_view
-        st.experimental_rerun()
+    col1, col2 = st.columns([.15, 1])
+    with col1:
+        if st.button("Submit"):
+            st.session_state.country = country
+            st.session_state.format_view = format_view
+            st.experimental_rerun()
+    with col2:
+        if st.button("Logout"):
+            # Reset session state
+            st.session_state['loggedin'] = False
+            st.session_state['username'] = ''
+            st.experimental_rerun()
 
 def view_by_date_x(data):
     for date in data['Date'].unique():
@@ -120,6 +128,7 @@ def view_by_date_x(data):
 
 def view_by_date(data):
     # Display URLs grouped by date
+    #st.set_page_config(layout="wide")
     for date in data['Date'].dropna().unique():
         st.subheader(f"Date: {date}")
         day_data = data[data['Date'] == date]
@@ -153,7 +162,7 @@ def show_policy_details(expand, row):
     expand.write(f"**Summary:** {row['Summary']}")
     expand.write(f"**Related News:** [{row['Title']}]({row['Link']})")
 def policy_detail_page():
-    st.set_page_config(layout="wide")
+    #st.set_page_config(layout="wide")
     policy = st.session_state.selected_policy
     # st.title(f"{policy['Policy']}")
     # st.write(f"**Title:** {policy['Policy (English)']}")
@@ -233,6 +242,7 @@ def policy_detail_page_view_by_policy():
 
 
 def view_by_policy(filtered_data):
+   # st.set_page_config(layout="wide")
     for policy in filtered_data['Policy'].unique():
         st.subheader(f"{filtered_data[filtered_data['Policy'] == policy]['Policy'].iloc[0]}")
         st.write(f"**Title:** {filtered_data[filtered_data['Policy'] == policy]['Policy (English)'].iloc[0]}")
@@ -252,6 +262,7 @@ def reset_state():
             del st.session_state[key]
 
 def country_page():
+    #st.set_page_config(layout="wide")
     st.title(f"Viewing Data for {st.session_state.country}")
     st.write(f"Format: {st.session_state.format_view}")
     st.sidebar.header("Filter by Topic")
@@ -279,6 +290,10 @@ def country_page():
 
     csv = filtered_data.to_csv(index=False)
     st.sidebar.download_button(label="Download Filtered Data", data=csv, file_name='policy_data.csv', mime='text/csv')
+    if st.sidebar.button("Logout"):
+            st.session_state['loggedin'] = False
+            st.session_state['username'] = ''
+            st.experimental_rerun()
 
     if st.button("Back to Homepage"):
         del st.session_state.country
@@ -293,13 +308,45 @@ def country_page():
         st.header("Policies Overview")
         view_by_date(filtered_data)
 
-if "country" not in st.session_state or "format_view" not in st.session_state:
-    main_page()
-elif st.session_state.country in ["Singapore", "Australia"]:
-    empty_page()
-elif "selected_policy" in st.session_state:
-    policy_detail_page()
-elif "filtered_data" and "policy" in st.session_state:
-    policy_detail_page_view_by_policy()
+def verify_password(input_password):
+    hashed_passwords = st.secrets["authentication"]["hashed_passwords"]
+    for hashed_password in hashed_passwords:
+        if bcrypt.verify(input_password, hashed_password):
+            return True
+    return False
+
+# Login Page
+def login_page():
+    st.set_page_config(layout="centered")
+    st.title("APAC ESG Policy Monitor")
+    with st.form("login_form"):
+        username = st.text_input("Username")
+        password = st.text_input("Password", type="password")
+        submit_button = st.form_submit_button("Login")
+
+        if submit_button:
+            if verify_password(password):
+                # Update session state
+                st.session_state['loggedin'] = True
+                st.session_state['username'] = username
+                st.experimental_rerun()
+            else:
+                st.error("Login failed. Please check your username and password.")
+
+def main():
+    if "country" not in st.session_state or "format_view" not in st.session_state:
+        main_page()
+    elif st.session_state.country in ["Singapore", "Australia"]:
+        empty_page()
+    elif "selected_policy" in st.session_state:
+        policy_detail_page()
+    elif "filtered_data" and "policy" in st.session_state:
+        policy_detail_page_view_by_policy()
+    else:
+        country_page()
+
+if 'loggedin' not in st.session_state or not st.session_state['loggedin']:
+        login_page()
 else:
-    country_page()
+        main()
+
