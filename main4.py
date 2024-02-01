@@ -1,9 +1,14 @@
 import streamlit as st
 import pandas as pd
+import requests
+import base64
+import os
 import numpy as np
 #from streamlit_tags import  st_tags_sidebar, st_tags
 
 
+#TODO authentication
+#TODO embeded page in view by policy
 
 excel_file_path = 'data/Chinese Policy News_Jan 24 Sample.xlsx'
 data = pd.read_excel(excel_file_path)
@@ -17,6 +22,32 @@ data = data.sort_values(by='Date', ascending=False)
 print("UNIQQUEEE " + str(len(data["Policy"].unique())))
 print(data.shape)
 print(f"DATE {data['Date'].isna().sum()}")
+
+def display_embeded_pdf_in_streamlit(pdf_link):
+    try:
+        # Download PDF to a temporary location
+        response = requests.get(pdf_link)
+        response.raise_for_status()  # Raise an error for bad status codes
+
+        # Write the PDF to a temporary file
+        temp_file_path = "temp_pdf_file.pdf"
+        with open(temp_file_path, "wb") as file:
+            file.write(response.content)
+
+        # Open the temp PDF file and encode it in base64
+        with open(temp_file_path, "rb") as file:
+            base64_pdf = base64.b64encode(file.read()).decode('utf-8')
+
+        # Embedding PDF in HTML
+        pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="700" height="1000" type="application/pdf"></iframe>'
+        st.markdown(pdf_display, unsafe_allow_html=True)
+
+        # Clean up: delete the temp file
+        os.remove(temp_file_path)
+
+    except requests.exceptions.RequestException as e:
+        # Handle any errors during the download
+        st.error("Couldn't render")
 
 
 def filter_categories(df, chosen_categories):
@@ -129,9 +160,12 @@ def policy_detail_page():
             del st.session_state.selected_policy
             st.experimental_rerun()
     with col2:
-        url = policy['Link']
+        url = policy['Policy Link']
+        if "pdf" not in url:
         # Embed the webpage
-        st.components.v1.iframe(url, width=700, height=600, scrolling=True)
+            st.components.v1.iframe(url, width=700, height=600, scrolling=True)
+        else:
+            display_embeded_pdf_in_streamlit(url)
 
 def policy_detail_page_view_by_policy():
     st.set_page_config(layout="wide")
@@ -162,8 +196,15 @@ def policy_detail_page_view_by_policy():
             del st.session_state.filtered_data
             st.experimental_rerun()
     with col2:
-        for link in filtered_data[filtered_data["Policy"] == policy]['Link']:
-            st.components.v1.iframe(link, width=700, height=600, scrolling=True)
+        #for link in filtered_data[filtered_data["Policy"] == policy]['Link']:
+        url = filtered_data[filtered_data['Policy'] == policy]['Policy Link'].iloc[0]
+        print(url)
+        if "pdf" not in url:
+        # Embed the webpage
+            st.components.v1.iframe(url, width=700, height=600, scrolling=True)
+        else:
+            display_embeded_pdf_in_streamlit(url)
+
 
 
 
