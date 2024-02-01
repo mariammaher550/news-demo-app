@@ -3,12 +3,16 @@ import pandas as pd
 import requests
 import base64
 import os
+from pdf2image import convert_from_path
+from io import BytesIO
 import numpy as np
 #from streamlit_tags import  st_tags_sidebar, st_tags
 
 
 #TODO authentication
 #TODO embeded page in view by policy
+#TODO pdf to images save
+#TODO display images
 
 excel_file_path = 'data/Chinese Policy News_Jan 24 Sample.xlsx'
 data = pd.read_excel(excel_file_path)
@@ -25,7 +29,7 @@ print(f"DATE {data['Date'].isna().sum()}")
 
 
 
-def display_embeded_pdf_in_streamlit(pdf_link):
+def display_embeded_pdf_in_streamlit_x(pdf_link):
     try:
         # Download PDF to a temporary location
         # response = requests.get(pdf_link)
@@ -50,7 +54,25 @@ def display_embeded_pdf_in_streamlit(pdf_link):
         # Handle any errors during the download
         st.error("Couldn't render")
 
+def display_embeded_pdf_in_streamlit(pdf_link):
+    pdf_file = os.path.join("data", f"{pdf_link.split('/')[-1]}")
+    pages = convert_from_path(pdf_file)
 
+    # Encode images in base64 and create an HTML string to embed
+    embedded_images = ""
+    for page in pages:
+        buffered = BytesIO()
+        page.save(buffered, format="JPEG")
+        img_str = base64.b64encode(buffered.getvalue()).decode()
+        embedded_images += f'<img src="data:image/jpeg;base64,{img_str}" style="width:100%; margin-bottom: 10px;">'
+
+    # Define the HTML for the scrollable mini window
+    mini_window_html = f"""
+            <div style="width: 700px; height: 500px; overflow-y: scroll; border: 1px solid #ccc;">
+                {embedded_images}
+            </div>
+            """
+    st.markdown(mini_window_html, unsafe_allow_html=True)
 def filter_categories(df, chosen_categories):
     # Join the categories into a regex pattern
     regex_pattern = chosen_categories
